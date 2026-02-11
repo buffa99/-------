@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ユニット掲示板システム</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes bounce-small {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+    .badge-bounce { animation: bounce-small 1s infinite; }
+    .animate-fade-in { animation: fadeIn 0.2s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    body { font-size: 18px; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useMemo } = React;
+
+const UNITS = [
+  { id: '1f-east', name: '1F-東ユニット' },
+  { id: '1f-west', name: '1F-西ユニット' },
+  { id: '2f-east', name: '2F-東ユニット' },
+  { id: '2f-west', name: '2F-西ユニット' },
+];
+
+const Icon = ({ type, size = 24, className = "" }) => {
+  const icons = {
+    user: <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>,
+    check: <><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></>,
+    alert: <><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></>,
+    clock: <><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>,
+    users: <><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>,
+    layout: <><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></>,
+    home: <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>,
+    settings: <><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></>,
+    edit: <><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></>,
+    trash: <><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></>,
+    chevronDown: <polyline points="6 9 12 15 18 9"/>,
+    chevronUp: <polyline points="18 15 12 9 6 15"/>,
+  };
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" 
+         fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+         className={className}>
+      {icons[type]}
+    </svg>
+  );
+};
+
+const INITIAL_USERS = [
+  { id: 'u1', name: '佐藤 (管理者)', role: 'admin', image: '佐', unitId: null },
+  { id: 'u2', name: '鈴木 介護士', role: 'staff', image: '鈴', unitId: '1f-east' },
+  { id: 'u3', name: '高橋 介護士', role: 'staff', image: '高', unitId: '1f-west' },
+  { id: 'u4', name: '田中 看護師', role: 'nurse', image: '田', unitId: null },
+  { id: 'u5', name: '伊藤 ヘルパー', role: 'helper', image: '伊', unitId: '2f-east' },
+  { id: 'u6', name: '新人 渡辺', role: 'staff', image: '渡', unitId: '2f-west' },
+];
+
+const INITIAL_MESSAGES = [
+  {
+    id: 'm1',
+    title: '【重要】感染症対策の徹底について',
+    content: 'インフルエンザ流行の兆しがあります。手洗い・うがい、マスク着用を徹底してください。',
+    priority: 'high',
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+    author: '施設長',
+    targetUnitIds: ['all']
+  },
+  {
+    id: 'm2',
+    title: '205号室 田中様の食事変更',
+    content: '本日の夕食より、刻み食からミキサー食へ変更となります。',
+    priority: 'normal',
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
+    author: '栄養課',
+    targetUnitIds: ['2f-east']
+  },
+  {
+    id: 'm3',
+    title: '週末のシフト調整のお願い',
+    content: '来週土曜日の早番が不足しています。入れる方はリーダーまで申し出てください。',
+    priority: 'low',
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 8).toISOString(),
+    author: 'リーダー',
+    targetUnitIds: ['all']
+  },
+];
+
+function App() {
+  const [deviceUnitId, setDeviceUnitId] = useState(() => localStorage.getItem('unit_bbs_device_unit') || null);
+
+  const [messages, setMessages] = useState(() => {
+    const saved = localStorage.getItem('unit_bbs_messages');
+    let loaded = saved ? JSON.parse(saved) : INITIAL_MESSAGES;
+    return loaded.map(m => {
+      if (!m.targetUnitIds) {
+        return { ...m, targetUnitIds: m.targetUnitId ? [m.targetUnitId] : ['all'] };
+      }
+      return m;
+    });
+  });
+  
+  const [readLogs, setReadLogs] = useState(() => {
+    const saved = localStorage.getItem('unit_bbs_readlogs');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [currentUser, setCurrentUser] = useState(null);
+  const [viewMode, setViewMode] = useState('login');
+
+  useEffect(() => {
+    if (deviceUnitId) localStorage.setItem('unit_bbs_device_unit', deviceUnitId);
+  }, [deviceUnitId]);
+
+  useEffect(() => {
+    localStorage.setItem('unit_bbs_messages', JSON.stringify(messages));
+  }, [messages]);
+
+  useEffect(() => {
+    localStorage.setItem('unit_bbs_readlogs', JSON.stringify(readLogs));
+  }, [readLogs]);
+
+  const handleUnitSelect = (unitId) => { setDeviceUnitId(unitId); };
+
+  const handleLogin = (user) => {
+    setCurrentUser(user);
+    if (user.role === 'admin' && viewMode === 'admin_login') {
+      setViewMode('admin');
+    } else {
+      markAsReadAutomatically(user.id);
+      setViewMode('dashboard');
+    }
+  };
+
+  const handleLogout = () => { setCurrentUser(null); setViewMode('login'); };
+
+  const markAsReadAutomatically = (userId) => {
+    const now = new Date().toISOString();
+    const newLogs = [];
+    const visibleMessages = messages.filter(msg => 
+      msg.targetUnitIds.includes('all') || msg.targetUnitIds.includes(deviceUnitId)
+    );
+    visibleMessages.forEach(msg => {
+      if (msg.priority === 'high') return;
+      const alreadyRead = readLogs.some(log => log.messageId === msg.id && log.userId === userId);
+      if (!alreadyRead) {
+        newLogs.push({ messageId: msg.id, userId: userId, timestamp: now, device: deviceUnitId });
+      }
+    });
+    if (newLogs.length > 0) setReadLogs(prev => [...prev, ...newLogs]);
+  };
+
+  const handleManualRead = (msgId) => {
+    if (!currentUser) return;
+    const now = new Date().toISOString();
+    const alreadyRead = readLogs.some(log => log.messageId === msgId && log.userId === currentUser.id);
+    if (!alreadyRead) {
+      setReadLogs(prev => [...prev, { messageId: msgId, userId: currentUser.id, timestamp: now, device: deviceUnitId }]);
+    }
+  };
+
+  const handleSaveMessage = (messageData) => {
+    if (messageData.id) {
+      setMessages(messages.map(m => m.id === messageData.id ? { ...m, ...messageData } : m));
+    } else {
+      const msg = { ...messageData, id: 'm' + Date.now(), timestamp: new Date().toISOString() };
+      setMessages([msg, ...messages]);
+    }
+  };
+
+  const handleDeleteMessage = (id) => { setMessages(messages.filter(m => m.id !== id)); };
+
+  // ---------- ユニット選択画面 ----------
+  if (!deviceUnitId) {
+    return (
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
+        <div className="bg-white p-8 rounded-2xl shadow-xl max-w-2xl w-full text-center">
+          <div className="mb-6 flex justify-center text-blue-600">
+            <Icon type="settings" size={64} />
+          </div>
+          <h1 className="text-3xl font-bold text-slate-800 mb-4">端末設定</h1>
+          <p className="text-slate-500 mb-8 text-lg">
+            このタブレットが設置されているユニットを選択してください。<br/>
+            選択したユニットに関連する連絡事項のみが表示されます。
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {UNITS.map(unit => (
+              <button key={unit.id} onClick={() => handleUnitSelect(unit.id)}
+                className="p-6 rounded-xl border-2 border-slate-200 hover:border-blue-500 hover:bg-blue-50 transition-all text-xl font-bold text-slate-700 flex items-center justify-center gap-3">
+                <Icon type="home" /> {unit.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ---------- ログイン画面 ----------
+  const LoginScreen = () => {
+    const [pendingUser, setPendingUser] = useState(null);
+    const currentUnitName = UNITS.find(u => u.id === deviceUnitId)?.name || '不明なユニット';
+
+    const getUnreadCount = (userId) => {
+      return messages.filter(msg => {
+        const isTarget = msg.targetUnitIds.includes('all') || msg.targetUnitIds.includes(deviceUnitId);
+        if (!isTarget) return false;
+        return !readLogs.some(log => log.messageId === msg.id && log.userId === userId);
+      }).length;
+    };
+
+    return (
+      <div className="min-h-screen bg-slate-50 p-4">
+        <div className="bg-white/80 backdrop-blur rounded-xl p-4 mb-4 shadow-sm text-center border border-slate-200">
+          <h2 className="text-xl text-slate-500 font-bold">社会福祉法人 相模原恵慈園</h2>
+        </div>
+        <header className="mb-8 text-center pt-4 relative">
+          <div className="absolute top-0 right-0">
+            <button onClick={() => { if(confirm('端末のユニット設定を変更しますか？')) setDeviceUnitId(null); }}
+              className="text-sm text-slate-400 bg-white px-3 py-2 rounded border border-slate-200 hover:bg-slate-100">
+              設置場所: {currentUnitName} (変更)
+            </button>
+          </div>
+          <h1 className="text-4xl font-bold text-slate-700 mb-2">おはようございます</h1>
+          <p className="text-xl text-slate-500">名前を選んで連絡事項を確認してください</p>
+        </header>
+        <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-3 gap-6">
+          {INITIAL_USERS.map(user => {
+            const unreadCount = getUnreadCount(user.id);
+            return (
+              <button key={user.id} onClick={() => setPendingUser(user)}
+                className="relative bg-white p-6 rounded-2xl shadow-sm border-2 border-slate-200 hover:border-blue-400 hover:shadow-md transition-all active:scale-95 flex flex-col items-center justify-center h-48">
+                {unreadCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xl font-bold w-12 h-12 rounded-full flex items-center justify-center badge-bounce shadow-lg">
+                    {unreadCount}
+                  </span>
+                )}
+                <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center text-3xl font-bold text-blue-600 mb-4">
+                  {user.image}
+                </div>
+                <span className="text-2xl font-bold text-slate-700">{user.name}</span>
+                <span className="text-base text-slate-400 mt-1">
+                  {user.unitId ? UNITS.find(u => u.id === user.unitId)?.name : '全ユニット'}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="mt-12 text-center">
+          <button onClick={() => setViewMode('admin')} className="text-slate-400 underline p-4 hover:text-slate-600 text-lg">
+            管理者モードへ（デモ用）
+          </button>
+        </div>
+
+        {pendingUser && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fade-in">
+            <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl">
+              <h3 className="text-2xl font-bold text-slate-800 mb-6 text-center">本人確認</h3>
+              <div className="flex flex-col items-center mb-8">
+                <div className="w-28 h-28 bg-blue-100 rounded-full flex items-center justify-center text-5xl font-bold text-blue-600 mb-4">
+                  {pendingUser.image}
+                </div>
+                <p className="text-2xl text-slate-700 text-center leading-relaxed">
+                  あなたは<br/>
+                  <span className="font-bold text-3xl">{pendingUser.name}</span> さん<br/>
+                  ですか？
+                </p>
+              </div>
+              <div className="flex gap-4">
+                <button onClick={() => setPendingUser(null)}
+                  className="flex-1 py-5 rounded-xl border-2 border-slate-300 text-slate-600 font-bold text-xl hover:bg-slate-50 transition-colors">
+                  いいえ
+                </button>
+                <button onClick={() => { handleLogin(pendingUser); setPendingUser(null); }}
+                  className="flex-1 py-5 rounded-xl bg-blue-600 text-white font-bold text-xl hover:bg-blue-700 shadow-lg transition-colors">
+                  はい
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // ---------- ダッシュボード ----------
+  const DashboardScreen = () => {
+    const [showOldMessages, setShowOldMessages] = useState(false);
+
+    const myMessages = messages.filter(m => 
+      m.targetUnitIds.includes('all') || m.targetUnitIds.includes(deviceUnitId)
+    );
+
+    const now = new Date();
+    const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+    const recentMessages = [];
+    const oldMessages = [];
+
+    myMessages.forEach(msg => {
+      if ((now - new Date(msg.timestamp)) > SEVEN_DAYS_MS) {
+        oldMessages.push(msg);
+      } else {
+        recentMessages.push(msg);
+      }
+    });
+
+    const importantMessages = recentMessages.filter(m => m.priority === 'high');
+    const normalMessages = recentMessages.filter(m => m.priority !== 'high');
+    const currentUnitName = UNITS.find(u => u.id === deviceUnitId)?.name;
+
+    return (
+      <div className="min-h-screen bg-slate-100 flex flex-col">
+        <div className="bg-white shadow-sm p-4 sticky top-0 z-10 flex justify-between items-center border-b border-slate-200">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xl">
+              {currentUser.image}
+            </div>
+            <div>
+              <p className="text-sm text-slate-500">{currentUnitName}</p>
+              <p className="text-2xl font-bold text-slate-800">{currentUser.name} さん</p>
+            </div>
+          </div>
+          <div className="bg-green-100 text-green-700 px-5 py-2 rounded-full flex items-center gap-2 font-bold text-lg">
+            <Icon type="check" size={24} /> ログイン中
+          </div>
+        </div>
+
+        <div className="flex-1 p-4 max-w-4xl mx-auto w-full space-y-8 pb-32">
+          {importantMessages.length > 0 && (
+            <div className="space-y-4">
+              <h2 className="text-red-600 font-bold flex items-center gap-2 text-2xl">
+                <Icon type="alert" size={28} /> 必ず確認してください（重要）
+              </h2>
+              {importantMessages.map(msg => (
+                <MessageCard key={msg.id} msg={msg} isHighPriority={true} 
+                  isRead={readLogs.some(l => l.messageId === msg.id && l.userId === currentUser.id)}
+                  onConfirm={() => handleManualRead(msg.id)} />
+              ))}
+            </div>
+          )}
+          
+          <div className="space-y-4">
+            <h2 className="text-slate-600 font-bold flex items-center gap-2 text-2xl">
+              <Icon type="layout" size={28} /> 通常の連絡事項
+            </h2>
+            {normalMessages.length === 0 ? (
+              <p className="text-slate-400 text-center py-8 text-xl">現在、新しい連絡事項はありません</p>
+            ) : (
+              normalMessages.map(msg => <MessageCard key={msg.id} msg={msg} />)
+            )}
+          </div>
+
+          {oldMessages.length > 0 && (
+            <div className="border-t-2 border-slate-200 pt-6">
+              <button onClick={() => setShowOldMessages(!showOldMessages)}
+                className="flex items-center gap-2 text-slate-500 font-bold text-xl hover:text-slate-700 transition-colors w-full">
+                {showOldMessages ? <Icon type="chevronUp" /> : <Icon type="chevronDown" />}
+                過去の連絡（{oldMessages.length}件）
+              </button>
+              {showOldMessages && (
+                <div className="mt-4 space-y-4 animate-fade-in">
+                  {oldMessages.map(msg => <MessageCard key={msg.id} msg={msg} isOld={true} />)}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/90 backdrop-blur border-t border-slate-200">
+          <button onClick={handleLogout}
+            className="w-full max-w-3xl mx-auto bg-slate-600 hover:bg-slate-700 text-white text-2xl font-bold py-5 rounded-xl shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-3">
+            <Icon type="user" size={32} /> ログアウト（次の方へ）
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // ---------- メッセージカード ----------
+  const MessageCard = ({ msg, isHighPriority, isRead, onConfirm, isOld }) => {
+    const formatDate = (ts) => {
+      const d = new Date(ts);
+      return (d.getMonth()+1) + '/' + d.getDate() + ' ' + 
+             String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+    };
+    let targetLabel = null;
+    if (!msg.targetUnitIds.includes('all')) {
+      const names = msg.targetUnitIds.map(id => UNITS.find(u => u.id === id)?.name).filter(Boolean);
+      if (names.length > 0) targetLabel = names.join(', ') + ' 限定';
+    }
+
+    return (
+      <div className={"bg-white rounded-xl p-6 shadow-sm border-l-8 " + (isHighPriority ? 'border-red-500 bg-red-50/50' : isOld ? 'border-slate-300 bg-slate-50' : 'border-blue-400')}>
+        <div className="flex justify-between items-start mb-3">
+          <div className="flex-1">
+            {targetLabel && (
+              <span className="inline-block bg-blue-100 text-blue-800 text-sm px-2 py-1 rounded mb-2 font-bold">{targetLabel}</span>
+            )}
+            <h3 className={"text-2xl font-bold leading-tight " + (isOld ? 'text-slate-500' : 'text-slate-800')}>{msg.title}</h3>
+          </div>
+          {isHighPriority && (
+            <span className="bg-red-100 text-red-600 px-3 py-1 rounded text-sm font-bold whitespace-nowrap ml-3">重要</span>
+          )}
+        </div>
+        <p className={"text-xl whitespace-pre-wrap leading-relaxed mb-4 " + (isOld ? 'text-slate-500' : 'text-slate-700')}>{msg.content}</p>
+        
+        {isHighPriority && !isOld && (
+          <div className="my-6">
+            {!isRead ? (
+              <button onClick={onConfirm}
+                className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-5 rounded-xl shadow-md flex items-center justify-center gap-2 animate-pulse transition-colors text-xl">
+                <Icon type="check" size={28} /> 内容を確認しました
+              </button>
+            ) : (
+              <div className="w-full bg-red-100 text-red-800 font-bold py-4 rounded-xl flex items-center justify-center gap-2 border border-red-200 text-xl">
+                <Icon type="check" size={24} /> 確認済み
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="flex justify-between items-center text-base text-slate-400 border-t pt-4 border-slate-100">
+          <span className="flex items-center gap-2"><Icon type="user" size={18} /> {msg.author}</span>
+          <span className="flex items-center gap-2"><Icon type="clock" size={18} /> {formatDate(msg.timestamp)}</span>
+        </div>
+      </div>
+    );
+  };
+
+  // ---------- 管理者画面 ----------
+  const AdminScreen = () => {
+    const [tab, setTab] = useState('status');
+    const [editingId, setEditingId] = useState(null);
+    const [title, setTitle] = useState('');
+    const [content, setContent] = useState('');
+    const [priority, setPriority] = useState('normal');
+    const [targetUnitIds, setTargetUnitIds] = useState(['all']);
+
+    const startEdit = (msg) => {
+      setEditingId(msg.id);
+      setTitle(msg.title);
+      setContent(msg.content);
+      setPriority(msg.priority);
+      setTargetUnitIds(msg.targetUnitIds || ['all']);
+      setTab('create');
+    };
+
+    const resetForm = () => {
+      setEditingId(null); setTitle(''); setContent(''); setPriority('normal'); setTargetUnitIds(['all']);
+    };
+
+    const getMessageReadStatus = (msgId) => {
+      const readUserIds = readLogs.filter(log => log.messageId === msgId).map(log => log.userId);
+      const unitStatuses = UNITS.map(unit => {
+        const staffInUnit = INITIAL_USERS.filter(u => u.unitId === unit.id);
+        const unreadInUnit = staffInUnit.filter(u => !readUserIds.includes(u.id));
+        return { unitName: unit.name, total: staffInUnit.length, unread: unreadInUnit, isComplete: unreadInUnit.length === 0 && staffInUnit.length > 0 };
+      });
+      const noUnitStaff = INITIAL_USERS.filter(u => !u.unitId);
+      const unreadNoUnit = noUnitStaff.filter(u => !readUserIds.includes(u.id));
+      return { readCount: readUserIds.length, unitStatuses, unreadNoUnit };
+    };
+
+    const handleSubmit = () => {
+      if (!title || !content) return;
+      handleSaveMessage({ id: editingId, title, content, priority, author: '管理者', targetUnitIds });
+      resetForm(); setTab('status');
+      alert(editingId ? '連絡事項を更新しました' : '連絡事項を投稿しました');
+    };
+
+    const handleDelete = (id) => {
+      if(confirm('本当にこの連絡事項を削除しますか？')) handleDeleteMessage(id);
+    };
+
+    const clearData = () => {
+      if(confirm('全てのデータを初期化しますか？')) {
+        localStorage.removeItem('unit_bbs_messages');
+        localStorage.removeItem('unit_bbs_readlogs');
+        localStorage.removeItem('unit_bbs_device_unit');
+        location.reload();
+      }
+    };
+
+    const toggleTarget = (value) => {
+      if (value === 'all') {
+        setTargetUnitIds(['all']);
+      } else {
+        let newTargets = [...targetUnitIds];
+        if (newTargets.includes('all')) newTargets = [];
+        if (newTargets.includes(value)) {
+          newTargets = newTargets.filter(t => t !== value);
+        } else {
+          newTargets.push(value);
+        }
+        if (newTargets.length === 0) newTargets = ['all'];
+        setTargetUnitIds(newTargets);
+      }
+    };
+
+    return (
+      <div className="min-h-screen bg-slate-800 text-slate-100 p-6">
+        <div className="max-w-6xl mx-auto">
+          <header className="flex justify-between items-center mb-8 pb-4 border-b border-slate-600">
+            <h1 className="text-3xl font-bold flex items-center gap-3">
+              <Icon type="users" size={32} /> 管理者コンソール
+            </h1>
+            <div className="flex gap-3">
+              <button onClick={clearData} className="bg-red-900/50 hover:bg-red-900 text-red-200 px-4 py-2 rounded border border-red-800">データ初期化</button>
+              <button onClick={() => setViewMode('login')} className="bg-slate-700 hover:bg-slate-600 px-6 py-2 rounded text-lg">トップ画面に戻る</button>
+            </div>
+          </header>
+
+          <div className="flex gap-4 mb-6">
+            <button onClick={() => { resetForm(); setTab('status'); }}
+              className={"px-8 py-4 rounded-lg font-bold text-xl " + (tab === 'status' ? 'bg-blue-500 text-white' : 'bg-slate-700 text-slate-300')}>
+              既読状況・編集
+            </button>
+            <button onClick={() => { resetForm(); setTab('create'); }}
+              className={"px-8 py-4 rounded-lg font-bold text-xl " + (tab === 'create' ? 'bg-green-600 text-white' : 'bg-slate-700 text-slate-300')}>
+              新規連絡作成
+            </button>
+          </div>
+
+          {tab === 'status' ? (
+            <div className="space-y-6">
+              {messages.map(msg => {
+                const status = getMessageReadStatus(msg.id);
+                const isHigh = msg.priority === 'high';
+                let targetDisplay = "全体";
+                if (!msg.targetUnitIds.includes('all')) {
+                  targetDisplay = msg.targetUnitIds.map(id => UNITS.find(u => u.id === id)?.name).join(', ');
+                }
+                return (
+                  <div key={msg.id} className="bg-slate-700 rounded-xl p-6 border border-slate-600">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="bg-slate-600 text-xs px-2 py-1 rounded text-slate-300">To: {targetDisplay}</span>
+                          <span className="text-slate-400 text-sm">{new Date(msg.timestamp).toLocaleString()}</span>
+                        </div>
+                        <h3 className={"font-bold text-2xl " + (isHigh ? 'text-red-300' : 'text-white')}>
+                          {isHigh && '【重要】'} {msg.title}
+                        </h3>
+                      </div>
+                      <div className="flex gap-2 ml-4">
+                        <button onClick={() => startEdit(msg)} className="bg-blue-600 hover:bg-blue-500 p-2 rounded text-white" title="編集">
+                          <Icon type="edit" />
+                        </button>
+                        <button onClick={() => handleDelete(msg.id)} className="bg-red-600 hover:bg-red-500 p-2 rounded text-white" title="削除">
+                          <Icon type="trash" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="bg-slate-800 p-4 rounded-lg grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {status.unitStatuses.map(uStat => (
+                        <div key={uStat.unitName} className="border-b border-slate-700 pb-2 last:border-0">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="font-bold text-slate-300">{uStat.unitName}</span>
+                            {uStat.isComplete ? (
+                              <span className="text-green-400 text-sm font-bold flex items-center gap-1"><Icon type="check" size={14}/> OK</span>
+                            ) : (
+                              <span className="text-red-400 text-sm font-bold">未読 {uStat.unread.length} / {uStat.total}</span>
+                            )}
+                          </div>
+                          {uStat.unread.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {uStat.unread.map(u => (
+                                <span key={u.id} className="bg-red-900/40 text-red-200 px-2 py-0.5 rounded text-xs border border-red-900/50">{u.name}</span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      {status.unreadNoUnit.length > 0 && (
+                        <div className="border-b border-slate-700 pb-2">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="font-bold text-slate-300">その他（看護師等）</span>
+                            <span className="text-red-400 text-sm font-bold">未読 {status.unreadNoUnit.length}</span>
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {status.unreadNoUnit.map(u => (
+                              <span key={u.id} className="bg-red-900/40 text-red-200 px-2 py-0.5 rounded text-xs border border-red-900/50">{u.name}</span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="bg-slate-700 p-8 rounded-xl">
+              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                {editingId ? <><Icon type="edit" /> 連絡事項を編集</> : <><Icon type="layout" /> 新しい連絡を作成</>}
+              </h2>
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-slate-400 mb-2 font-bold">タイトル</label>
+                  <input type="text" value={title} onChange={(e) => setTitle(e.target.value)}
+                    className="w-full p-4 rounded-lg bg-slate-800 border border-slate-600 focus:border-blue-500 outline-none text-white text-lg"
+                    placeholder="例：インフルエンザワクチン接種について" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-slate-400 mb-2 font-bold">重要度</label>
+                    <div className="flex gap-4 bg-slate-800 p-3 rounded-lg border border-slate-600">
+                      <label className="flex items-center gap-2 cursor-pointer p-2 hover:bg-slate-700 rounded flex-1">
+                        <input type="radio" name="priority" value="normal" checked={priority === 'normal'} onChange={() => setPriority('normal')} className="w-5 h-5" /> 通常
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer text-red-300 p-2 hover:bg-slate-700 rounded flex-1">
+                        <input type="radio" name="priority" value="high" checked={priority === 'high'} onChange={() => setPriority('high')} className="w-5 h-5" /> 重要
+                      </label>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 mb-2 font-bold">対象ユニット（複数選択可）</label>
+                    <div className="bg-slate-800 p-3 rounded-lg border border-slate-600 grid grid-cols-2 gap-2">
+                      <label className="flex items-center gap-2 cursor-pointer hover:bg-slate-700 p-1 rounded">
+                        <input type="checkbox" checked={targetUnitIds.includes('all')} onChange={() => toggleTarget('all')} className="w-5 h-5" />
+                        <span className="font-bold">全体連絡</span>
+                      </label>
+                      {UNITS.map(u => (
+                        <label key={u.id} className={"flex items-center gap-2 cursor-pointer hover:bg-slate-700 p-1 rounded " + (targetUnitIds.includes('all') ? 'opacity-50' : '')}>
+                          <input type="checkbox" checked={targetUnitIds.includes(u.id)} onChange={() => toggleTarget(u.id)} disabled={targetUnitIds.includes('all')} className="w-5 h-5" />
+                          {u.name}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-slate-400 mb-2 font-bold">内容</label>
+                  <textarea value={content} onChange={(e) => setContent(e.target.value)}
+                    className="w-full p-4 h-48 rounded-lg bg-slate-800 border border-slate-600 focus:border-blue-500 outline-none text-white text-lg leading-relaxed"
+                    placeholder="詳細を入力してください..." />
+                </div>
+                <div className="flex gap-4 pt-4">
+                  {editingId && (
+                    <button onClick={() => { resetForm(); setTab('status'); }} className="bg-slate-600 hover:bg-slate-500 text-white font-bold py-4 px-8 rounded-xl flex-1 text-xl">キャンセル</button>
+                  )}
+                  <button onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-8 rounded-xl flex-[2] text-xl shadow-lg">
+                    {editingId ? '更新する' : '投稿する'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div>
+      {viewMode === 'login' && <LoginScreen />}
+      {viewMode === 'dashboard' && currentUser && <DashboardScreen />}
+      {viewMode === 'admin' && <AdminScreen />}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
