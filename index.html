@@ -136,6 +136,13 @@ function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [viewMode, setViewMode] = useState('login'); // login, dashboard, admin, setup
 
+  const getDisplayName = (user) => {
+    if (user.role === 'admin') {
+      return '管理者 − ' + user.name;
+    }
+    return user.name;
+  };
+
   // 永続化
   useEffect(() => { localStorage.setItem('unit_bbs_unit_name', unitName); }, [unitName]);
   useEffect(() => { localStorage.setItem('unit_bbs_users', JSON.stringify(users)); }, [users]);
