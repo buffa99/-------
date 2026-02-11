@@ -295,9 +295,14 @@ function App() {
 
     return (
       <div className="min-h-screen bg-slate-50 p-4">
-        <div className="bg-white/80 backdrop-blur rounded-xl p-4 mb-4 shadow-sm text-center border border-slate-200 max-w-3xl mx-auto">
-          <h2 className="text-lg text-slate-500 font-bold">社会福祉法人 相模原敬寿園</h2>
-          <h1 className="text-3xl font-bold text-blue-700 mt-1">{unitName}</h1>
+        <div className="bg-white/80 backdrop-blur rounded-xl p-4 mb-4 shadow-sm border border-slate-200 max-w-3xl mx-auto flex items-center justify-between">
+          <div>
+            <h2 className="text-lg text-slate-500 font-bold">社会福祉法人 相模原敬寿園</h2>
+            <h1 className="text-3xl font-bold text-blue-700 mt-1">{unitName}</h1>
+          </div>
+          <button onClick={() => setViewMode('admin')} className="bg-slate-800 text-white font-bold py-2 px-4 rounded-lg hover:bg-slate-900 text-sm">
+            管理者モード
+          </button>
         </div>
 
         <header className="mb-8 text-center pt-4">
@@ -323,11 +328,6 @@ function App() {
               </button>
             );
           })}
-        </div>
-        <div className="mt-12 text-center">
-          <button onClick={() => setViewMode('admin')} className="text-slate-400 underline p-4 hover:text-slate-600 text-lg">
-            管理者モードへ
-          </button>
         </div>
 
         {pendingUser && (
