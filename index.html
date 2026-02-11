@@ -62,7 +62,7 @@ const Icon = ({ type, size = 24, className = "" }) => {
 
 // --- モックデータ（初期値） ---
 const INITIAL_USERS = [
-  { id: 'u1', name: '佐藤 (管理者)', role: 'admin', image: '佐' },
+  { id: 'u1', name: '佐藤', role: 'admin', image: '佐' },
   { id: 'u2', name: '鈴木 介護士', role: 'staff', image: '鈴' },
   { id: 'u3', name: '高橋 介護士', role: 'staff', image: '高' },
   { id: 'u4', name: '田中 看護師', role: 'nurse', image: '田' },
@@ -305,7 +305,7 @@ function App() {
                 <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center text-3xl font-bold text-blue-600 mb-4">
                   {user.image}
                 </div>
-                <span className="text-2xl font-bold text-slate-700">{user.name}</span>
+                <span className="text-2xl font-bold text-slate-700">{getDisplayName(user)}</span>
               </button>
             );
           })}
@@ -326,7 +326,7 @@ function App() {
                 </div>
                 <p className="text-2xl text-slate-700 text-center leading-relaxed">
                   あなたは<br/>
-                  <span className="font-bold text-3xl">{pendingUser.name}</span> さん<br/>
+                  <span className="font-bold text-3xl">{getDisplayName(pendingUser)}</span> さん<br/>
                   ですか？
                 </p>
               </div>
@@ -367,7 +367,7 @@ function App() {
             </div>
             <div>
               <p className="text-sm text-slate-500">{unitName}</p>
-              <p className="text-2xl font-bold text-slate-800">{currentUser.name} さん</p>
+              <p className="text-2xl font-bold text-slate-800">{getDisplayName(currentUser)} さん</p>
             </div>
           </div>
           <div className="flex gap-2">
@@ -621,7 +621,7 @@ function App() {
             const isRead = readUserIds.includes(user.id);
             return (
               <div key={user.id} className={`text-sm ${isRead ? 'text-slate-700' : 'text-slate-400'}`}>
-                {user.name}
+                {getDisplayName(user)}
                 <span className={`ml-1 font-bold ${isRead ? 'text-green-600' : 'text-slate-300'}`}>{isRead ? ' ✔' : ' 未'}</span>
               </div>
             );
@@ -888,7 +888,7 @@ function App() {
                         {user.image}
                       </div>
                       <div>
-                        <p className="font-bold text-lg">{user.name}</p>
+                        <p className="font-bold text-lg">{getDisplayName(user)}</p>
                       </div>
                     </div>
                     <div className="flex gap-2">
