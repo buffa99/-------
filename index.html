@@ -127,6 +127,12 @@ function App() {
     return saved ? JSON.parse(saved) : [];
   });
 
+  // 掲示板既読ログ
+  const [postReadLogs, setPostReadLogs] = useState(() => {
+    const saved = localStorage.getItem('unit_bbs_post_readlogs');
+    return saved ? JSON.parse(saved) : [];
+  });
+
   const [currentUser, setCurrentUser] = useState(null);
   const [viewMode, setViewMode] = useState('login'); // login, dashboard, admin, setup
 
@@ -136,6 +142,7 @@ function App() {
   useEffect(() => { localStorage.setItem('unit_bbs_messages', JSON.stringify(messages)); }, [messages]);
   useEffect(() => { localStorage.setItem('unit_bbs_readlogs', JSON.stringify(readLogs)); }, [readLogs]);
   useEffect(() => { localStorage.setItem('unit_bbs_posts', JSON.stringify(posts)); }, [posts]);
+  useEffect(() => { localStorage.setItem('unit_bbs_post_readlogs', JSON.stringify(postReadLogs)); }, [postReadLogs]);
 
   // 初期化チェック
   useEffect(() => {
@@ -167,6 +174,19 @@ function App() {
       }
     });
     if (newLogs.length > 0) setReadLogs(prev => [...prev, ...newLogs]);
+  };
+
+  // 自動既読（掲示板投稿）
+  const markPostsAsRead = (userId) => {
+    const now = new Date().toISOString();
+    const newLogs = [];
+    posts.forEach(post => {
+      const alreadyRead = postReadLogs.some(log => log.postId === post.id && log.userId === userId);
+      if (!alreadyRead) {
+        newLogs.push({ postId: post.id, userId: userId, timestamp: now });
+      }
+    });
+    if (newLogs.length > 0) setPostReadLogs(prev => [...prev, ...newLogs]);
   };
 
   // 手動既読（重要メッセージ）
@@ -203,6 +223,7 @@ function App() {
   };
   const handleDeletePost = (postId) => {
     setPosts(posts.filter(p => p.id !== postId));
+    setPostReadLogs(prev => prev.filter(log => log.postId !== postId));
   };
 
   // 職員管理
@@ -449,6 +470,10 @@ function App() {
   // --- タブ2: 掲示板（タイムライン） ---
   const BulletinBoardTab = () => {
     const [newPostContent, setNewPostContent] = useState('');
+
+    useEffect(() => {
+      markPostsAsRead(currentUser.id);
+    }, [posts]);
 
     const submitPost = (e) => {
       e.preventDefault();
