@@ -176,17 +176,14 @@ function App() {
     if (newLogs.length > 0) setReadLogs(prev => [...prev, ...newLogs]);
   };
 
-  // 自動既読（掲示板投稿）
-  const markPostsAsRead = (userId) => {
+  // 手動既読（掲示板投稿）
+  const handlePostManualRead = (postId) => {
+    if (!currentUser) return;
     const now = new Date().toISOString();
-    const newLogs = [];
-    posts.forEach(post => {
-      const alreadyRead = postReadLogs.some(log => log.postId === post.id && log.userId === userId);
-      if (!alreadyRead) {
-        newLogs.push({ postId: post.id, userId: userId, timestamp: now });
-      }
-    });
-    if (newLogs.length > 0) setPostReadLogs(prev => [...prev, ...newLogs]);
+    const alreadyRead = postReadLogs.some(log => log.postId === postId && log.userId === currentUser.id);
+    if (!alreadyRead) {
+      setPostReadLogs(prev => [...prev, { postId: postId, userId: currentUser.id, timestamp: now }]);
+    }
   };
 
   // 手動既読（重要メッセージ）
@@ -220,6 +217,9 @@ function App() {
       timestamp: new Date().toISOString(),
     };
     setPosts([newPost, ...posts]);
+    // 投稿者は自動既読
+    const now = new Date().toISOString();
+    setPostReadLogs(prev => [...prev, { postId: newPost.id, userId: currentUser.id, timestamp: now }]);
   };
   const handleDeletePost = (postId) => {
     setPosts(posts.filter(p => p.id !== postId));
@@ -471,10 +471,6 @@ function App() {
   const BulletinBoardTab = () => {
     const [newPostContent, setNewPostContent] = useState('');
 
-    useEffect(() => {
-      markPostsAsRead(currentUser.id);
-    }, [posts]);
-
     const submitPost = (e) => {
       e.preventDefault();
       if (!newPostContent.trim()) return;
@@ -535,6 +531,23 @@ function App() {
                 <p className="text-lg text-slate-700 whitespace-pre-wrap leading-relaxed pl-10">
                   {post.content}
                 </p>
+                
+                {/* 確認ボタンエリア */}
+                {post.authorId !== currentUser.id && (
+                  <div className="pl-10 my-3">
+                    {postReadLogs.some(l => l.postId === post.id && l.userId === currentUser.id) ? (
+                      <div className="inline-flex items-center gap-2 bg-green-100 text-green-800 font-bold py-2 px-4 rounded-lg border border-green-200">
+                        <Icon type="check" size={20} /> 確認済み
+                      </div>
+                    ) : (
+                      <button onClick={() => handlePostManualRead(post.id)}
+                        className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md flex items-center gap-2 transition-colors">
+                        <Icon type="check" size={20} /> 確認しました
+                      </button>
+                    )}
+                  </div>
+                )}
+
                 <div className="pl-10">
                   <ReadStatusList users={users} readUserIds={postReadLogs.filter(l => l.postId === post.id).map(l => l.userId)} />
                 </div>
