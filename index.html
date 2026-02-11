@@ -146,12 +146,8 @@ function App() {
 
   const handleLogin = (user) => {
     setCurrentUser(user);
-    if (user.role === 'admin' && viewMode === 'admin_login') {
-      setViewMode('admin');
-    } else {
-      markAsReadAutomatically(user.id);
-      setViewMode('dashboard');
-    }
+    markAsReadAutomatically(user.id);
+    setViewMode('dashboard');
   };
 
   const handleLogout = () => {
@@ -351,6 +347,11 @@ function App() {
             </div>
           </div>
           <div className="flex gap-2">
+            {currentUser.role === 'admin' && (
+              <button onClick={() => setViewMode('admin')} className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2">
+                <Icon type="settings" /> 管理者コンソール
+              </button>
+            )}
             <button onClick={handleLogout} className="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg font-bold flex items-center gap-2">
               <Icon type="arrowLeft" /> トップに戻る
             </button>
@@ -549,6 +550,26 @@ function App() {
                 <Icon type="check" size={24} /> 確認済み
               </div>
             )}
+          </div>
+        )}
+
+        {/* 管理者用：既読状況表示 */}
+        {currentUser && currentUser.role === 'admin' && (
+          <div className="mb-4 pt-4 border-t border-slate-100">
+            <p className="text-sm text-slate-400 mb-2 font-bold">既読状況:</p>
+            <div className="flex flex-wrap gap-2">
+              {users.map(u => {
+                const isReadUser = readLogs.some(l => l.messageId === msg.id && l.userId === u.id);
+                return (
+                  <div key={u.id} className={`flex items-center gap-1 bg-slate-100 rounded-full px-2 py-1 ${isReadUser ? '' : 'opacity-40'}`}>
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${isReadUser ? 'bg-blue-100 text-blue-600' : 'bg-slate-300 text-slate-500'}`}>
+                      {u.image}
+                    </div>
+                    <span className="text-xs font-bold text-slate-600">{u.name}</span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 
