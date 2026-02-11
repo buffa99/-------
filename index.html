@@ -351,6 +351,12 @@ function App() {
   const DashboardScreen = () => {
     const [activeTab, setActiveTab] = useState('check'); // check or board
 
+    const getUnreadPostCount = () => {
+      return posts.filter(post => 
+        !postReadLogs.some(log => log.postId === post.id && log.userId === currentUser.id)
+      ).length;
+    };
+
     return (
       <div className="min-h-screen bg-slate-100 flex flex-col">
         {/* ヘッダー */}
@@ -384,8 +390,13 @@ function App() {
               <Icon type="list" /> 連絡チェック
             </button>
             <button onClick={() => setActiveTab('board')}
-              className={`flex-1 py-4 text-xl font-bold flex items-center justify-center gap-2 border-b-4 transition-colors ${activeTab === 'board' ? 'border-green-600 text-green-600 bg-green-50' : 'border-transparent text-slate-400 hover:bg-slate-50'}`}>
+              className={`relative flex-1 py-4 text-xl font-bold flex items-center justify-center gap-2 border-b-4 transition-colors ${activeTab === 'board' ? 'border-green-600 text-green-600 bg-green-50' : 'border-transparent text-slate-400 hover:bg-slate-50'}`}>
               <Icon type="messageSquare" /> 掲示板
+              {getUnreadPostCount() > 0 && (
+                <span className="absolute top-2 right-1/4 bg-red-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center badge-bounce shadow-md">
+                  {getUnreadPostCount()}
+                </span>
+              )}
             </button>
           </div>
         </div>
