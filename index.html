@@ -875,7 +875,12 @@ function App() {
                 </h2>
                 <form onSubmit={handleUserSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                   <div className="md:col-span-3">
-                    <label className="block text-slate-400 text-sm mb-1">名前 <span className="text-red-400">*</span></label>
+                    <label className="block text-slate-400 text-sm mb-1">
+                      {editingUser && editingUser.role === 'admin' && (
+                        <span className="text-red-500 font-bold text-lg mr-2">管理者</span>
+                      )}
+                      名前 <span className="text-red-400">*</span>
+                    </label>
                     <input type="text" value={userName} onChange={(e) => setUserName(e.target.value)}
                       className="w-full p-3 rounded bg-slate-800 border border-slate-600 focus:border-blue-500 outline-none text-white"
                       placeholder="例：山田 花子" required />
