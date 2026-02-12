@@ -264,6 +264,7 @@ function App() {
   // ---------- ログイン画面 ----------
   const LoginScreen = () => {
     const [pendingUser, setPendingUser] = useState(null);
+    const [showAdminPinModal, setShowAdminPinModal] = useState(false);
 
     const getUnreadCount = (userId) => {
       return messages.filter(msg => 
@@ -278,7 +279,7 @@ function App() {
             <h2 className="text-lg text-slate-500 font-bold">社会福祉法人 相模原敬寿園</h2>
             <h1 className="text-3xl font-bold text-blue-700 mt-1">{unitName}</h1>
           </div>
-          <button onClick={() => setViewMode('admin')} className="absolute right-4 top-1/2 -translate-y-1/2 bg-slate-800 text-white font-bold py-2 px-4 rounded-lg hover:bg-slate-900 text-sm">
+          <button onClick={() => setShowAdminPinModal(true)} className="absolute right-4 top-1/2 -translate-y-1/2 bg-slate-800 text-white font-bold py-2 px-4 rounded-lg hover:bg-slate-900 text-sm">
             管理者モード
           </button>
         </div>
@@ -626,6 +627,8 @@ function App() {
     const [content, setContent] = useState('');
     const [priority, setPriority] = useState('normal');
     const [editUnitName, setEditUnitName] = useState(unitName);
+    const [currentPin, setCurrentPin] = useState('');
+    const [newPin1, setNewPin1] = useState('');
 
     // 職員管理用state
     const [editingUser, setEditingUser] = useState(null);
@@ -716,6 +719,20 @@ function App() {
       }
     };
 
+    const handleChangePin = () => {
+      const adminPin = localStorage.getItem('unit_bbs_admin_pin') || '0000';
+      if (currentPin !== adminPin) {
+        alert('現在の暗証番号が違います');
+        return;
+      }
+      if (newPin1.length !== 4) {
+        alert('新しい暗証番号は4桁で入力してください');
+        return;
+      }
+      localStorage.setItem('unit_bbs_admin_pin', newPin1);
+      alert('暗証番号を変更しました');
+    };
+
     return (
       <div className="min-h-screen bg-slate-800 text-slate-100 p-6">
         <div className="max-w-6xl mx-auto">
@@ -736,6 +753,26 @@ function App() {
               className="bg-slate-800 border border-slate-500 rounded px-3 py-2 text-white flex-1" />
             <button onClick={handleUnitNameChange} className="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded font-bold">変更</button>
           </div>
+          {/* 暗証番号変更 */}
+          <div className="bg-slate-700 p-4 rounded-lg mb-8 border border-slate-600">
+            <h3 className="font-bold text-slate-300 mb-2">暗証番号変更:</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-slate-400 mb-1">現在の暗証番号:</label>
+                <input type="password" maxLength="4" value={currentPin} onChange={(e) => setCurrentPin(e.target.value)} className="w-full bg-slate-800 border border-slate-500 rounded px-3 py-2 text-white" />
+              </div>
+              <div>
+                <label className="block text-slate-400 mb-1">新しい暗証番号:</label>
+                <input type="password" maxLength="4" value={newPin1} onChange={(e) => setNewPin1(e.target.value)} className="w-full bg-slate-800 border border-slate-500 rounded px-3 py-2 text-white" />
+              </div>
+            </div>
+            <div className="mt-4">
+              <button onClick={handleChangePin} className="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded font-bold">
+                暗証番号を変更
+              </button>
+            </div>
+          </div>
+
 
           <div className="flex gap-4 mb-6 overflow-x-auto pb-2">
             <button onClick={() => { resetForm(); setTab('status'); }}
@@ -898,6 +935,44 @@ function App() {
               </div>
             </div>
           )}
+
+        {/* 管理者暗証番号入力モーダル */}
+        {showAdminPinModal && (
+          <AdminPinModal onClose={() => setShowAdminPinModal(false)} onAccess={() => {
+            setShowAdminPinModal(false);
+            setViewMode('admin');
+          }} />
+        )}
+      </div>
+    );
+  };
+
+  // --- 管理者暗証番号入力モーダル ---
+  const AdminPinModal = ({ onClose, onAccess }) => {
+    const [pin, setPin] = useState('');
+    const [error, setError] = useState('');
+    const adminPin = localStorage.getItem('unit_bbs_admin_pin') || '0000';
+
+    const handlePinSubmit = () => {
+      if (pin === adminPin) {
+        onAccess();
+      } else {
+        setError('暗証番号が違います');
+      }
+    };
+
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fade-in">
+        <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl">
+          <h3 className="text-2xl font-bold text-slate-800 mb-6 text-center">管理者暗証番号を入力してください</h3>
+          {error && <p className="text-red-500 text-center mb-4">{error}</p>}
+          <input type="password" maxLength="4" value={pin} onChange={(e) => setPin(e.target.value)}
+                 className="w-full p-4 border-2 border-slate-300 rounded-xl text-xl mb-6 focus:border-blue-500 outline-none text-center" autoFocus />
+          <div className="flex gap-4">
+            <button onClick={onClose} className="flex-1 py-3 rounded-xl border-2 border-slate-300 text-slate-600 font-bold text-xl hover:bg-slate-50 transition-colors">キャンセル</button>
+            <button onClick={handlePinSubmit} className="flex-1 py-3 rounded-xl bg-blue-600 text-white font-bold text-xl hover:bg-blue-700 shadow-lg transition-colors">入る</button>
+          </div>
+          <p className="text-center mt-4 text-sm text-slate-500"><a href="javascript:localStorage.removeItem('unit_bbs_admin_pin')">暗証番号を忘れた場合</a></p>
         </div>
       </div>
     );
@@ -911,6 +986,33 @@ function App() {
     </div>
   );
 }
+
+// --- ユーティリティ関数 ---
+
+// localStorageから値を取得する（存在しない場合はdefaultValueを返す）
+const useLocalStorage = (key, defaultValue) => {
+  const [value, setValue] = useState(() => {
+    const saved = localStorage.getItem(key);
+    return saved !== null ? JSON.parse(saved) : defaultValue;
+  });
+
+  useEffect(() => {
+    localStorage.setItem(key, JSON.stringify(value));
+  }, [key, value]);
+
+  return [value, setValue];
+};
+
+// タイムスタンプをフォーマットする
+const formatDate = (ts) => {
+  const d = new Date(ts);
+  return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+};
+
+// 文字列の最初の一文字を取得する
+const getFirstChar = (str) => {
+  return str.charAt(0);
+};
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App />);
 </script>
