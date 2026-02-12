@@ -76,32 +76,10 @@ const AdminBadge = ({ user }) => {
 
 // --- モックデータ（初期値） ---
 const INITIAL_USERS = [
-  { id: 'u1', name: '佐藤', role: 'admin', image: '佐' },
-  { id: 'u2', name: '鈴木 介護士', role: 'staff', image: '鈴' },
-  { id: 'u3', name: '高橋 介護士', role: 'staff', image: '高' },
-  { id: 'u4', name: '田中 看護師', role: 'nurse', image: '田' },
-  { id: 'u5', name: '伊藤 ヘルパー', role: 'helper', image: '伊' },
-  { id: 'u6', name: '新人 渡辺', role: 'staff', image: '渡' },
+  { id: 'u1', name: '管理者', role: 'admin', image: '管' },
 ];
 
-const INITIAL_MESSAGES = [
-  {
-    id: 'm1',
-    title: '【重要】感染症対策の徹底について',
-    content: 'インフルエンザ流行の兆しがあります。手洗い・うがい、マスク着用を徹底してください。',
-    priority: 'high',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-    author: '施設長',
-  },
-  {
-    id: 'm2',
-    title: '205号室 田中様の食事変更',
-    content: '本日の夕食より、刻み食からミキサー食へ変更となります。',
-    priority: 'normal',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
-    author: '栄養課',
-  },
-];
+const INITIAL_MESSAGES = [];
 
 const ROLE_NAMES = {
   admin: '管理者',
